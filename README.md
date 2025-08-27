@@ -1,166 +1,77 @@
-# Sistema FideBurguesas - Cliente/Servidor
+FIDEBURGUESAS POS
 
-Sistema completo de gestión de pedidos para una hamburguesería con interfaz gráfica, servidor concurrente y base de datos MySQL.
+Aplicación de punto de venta con arquitectura cliente–servidor en Java. El cliente ofrece una interfaz en Swing para gestionar productos y órdenes. El servidor expone un protocolo de texto sobre TCP y persiste los datos en SQLite.
 
-## Características
+DESCRIPCIÓN GENERAL
 
-- ✅ **Servidor concurrente** - Maneja múltiples clientes simultáneamente
-- ✅ **Base de datos MySQL** - Persistencia completa de productos y órdenes
-- ✅ **Interfaz gráfica Swing** - Cliente fácil de usar
-- ✅ **3 productos predefinidos** - Hamburguesas, Papas Fritas, Refrescos
-- ✅ **Tracking de pedidos** - Estados: PENDIENTE → EN_PREPARACION → LISTO → ENTREGADO
-- ✅ **JOptionPane** - Mensajes de confirmación y error
+• Cliente (Swing): muestra productos en tabla, permite crear órdenes con tipo de hamburguesa, cantidades de hamburguesa, papas y bebida, opción de combo (+₡1500 por hamburguesa que añade papas y bebida automáticamente) y observaciones del cliente. Permite ver las órdenes y actualizar su estado.
+• Servidor (Swing): ventana con botones Iniciar, Detener y Salir, además de un registro de eventos.
+• Persistencia: SQLite con creación automática de tablas. Si existe la columna “notas” en la tabla de órdenes, se almacenan ahí las observaciones.
 
-## Estructura del Proyecto
+TECNOLOGÍAS
 
-```
-src/
-├── cs/
-│   ├── client/
-│   │   ├── ClienteSwing.java    # Interfaz gráfica del cliente
-│   │   └── ClientMain.java      # Clase principal del cliente
-│   ├── server/
-│   │   ├── ServerMain.java      # Servidor principal
-│   │   ├── ClientHandler.java   # Maneja cada cliente en un hilo
-│   │   └── Protocol.java        # Protocolo de comunicación
-│   ├── model/
-│   │   ├── Producto.java        # Modelo de producto
-│   │   └── Orden.java           # Modelo de orden
-│   ├── dao/
-│   │   ├── ProductoDao.java     # Acceso a datos de productos
-│   │   └── OrdenDao.java        # Acceso a datos de órdenes
-│   └── util/
-│       └── DB.java              # Conexión a base de datos
-└── schema.sql                   # Script de base de datos
-```
+Java (Swing, Sockets TCP)
+SQLite con controlador sqlite-jdbc
+Ant/NetBeans para compilación y ejecución
 
-## Configuración
+REQUISITOS
 
-### 1. Base de Datos MySQL
+• JDK 17 o superior
+• Archivo sqlite-jdbc en la carpeta lib y referenciado en el proyecto
 
-1. Instala MySQL si no lo tienes
-2. Ejecuta el script `schema.sql`:
-   ```sql
-   mysql -u root -p < schema.sql
-   ```
+CÓMO EJECUTAR
 
-### 2. Configurar Credenciales
+Servidor
 
-Edita `src/cs/util/DB.java` con tus credenciales de MySQL:
-```java
-private static final String USER = "tu_usuario";
-private static final String PASS = "tu_contraseña";
-```
+1. Abrir el proyecto en NetBeans.
+2. Ejecutar la clase cs.server.ServerMain.
+3. En la ventana del servidor, confirmar el puerto (por defecto 5050) y pulsar Iniciar.
 
-### 3. Agregar MySQL Connector
+Cliente
 
-En NetBeans:
-1. Click derecho en el proyecto → Properties
-2. Libraries → Add JAR/Folder
-3. Selecciona `mysql-connector-j-8.x.x.jar`
+1. Ejecutar la clase cs.client.ClienteSwing.
+2. Conectar al servidor en 127.0.0.1:5050.
+3. Usar Ver Productos, Crear Orden, Ver Órdenes y Actualizar Estado.
 
-## Uso del Sistema
+FUNCIONALIDADES PRINCIPALES
 
-### 1. Ejecutar Servidor
+Productos
+– Visualización en tabla con ID, nombre, descripción, precio y disponibilidad.
 
-```bash
-./run_server.sh
-```
+Órdenes
+– Creación de órdenes con selección del tipo de hamburguesa.
+– Cantidades independientes para hamburguesa, papas y bebida.
+– Opción de combo que suma ₡1500 por cada hamburguesa y añade papas y bebida automáticamente.
+– Observaciones del cliente (por ejemplo: “sin queso”).
+– Listado de órdenes mostrando ID, total, estado, lo que hay que preparar y notas.
+– Actualización de estado: PENDIENTE, EN\_PREPARACION, LISTO, ENTREGADO.
 
-O manualmente:
-```bash
-java -cp src cs.server.ServerMain
-```
+PROTOCOLO (RESUMEN)
 
-Deberías ver: "Servidor escuchando en puerto 5050"
+El cliente envía comandos por TCP y el servidor responde en texto plano.
 
-### 2. Ejecutar Cliente
+LIST\_PRODUCTS
+Respuesta: OK|PRODUCTS|id|nombre|descripcion|precio|disponible|...
 
-```bash
-./run_client.sh
-```
+CREATE\_ORDER|id\:qty|OBS=texto opcional|COMBO=n opcional
+Respuesta: OK|ORDER\_CREATED|ordenId|total
 
-O manualmente:
-```bash
-java -cp src cs.client.ClientMain
-```
+LIST\_ORDERS
+Respuesta: OK|ORDERS|id|total|estado|preparar|notas|...
 
-Se abrirá la interfaz gráfica.
+UPDATE\_ORDER\_STATUS|ordenId|nuevoEstado
+Respuesta: OK|STATUS\_UPDATED
 
-### 3. Usar la Aplicación
+ESTRUCTURA DEL PROYECTO
 
-1. **Conectar**: Click en "Conectar al Servidor"
-2. **Ver Productos**: Pestaña "Productos" → "Ver Productos"
-3. **Crear Orden**: Pestaña "Crear Orden" → Seleccionar cantidades → "Crear Orden"
-4. **Ver Órdenes**: Pestaña "Órdenes" → "Ver Órdenes"
-5. **Actualizar Estado**: Ingresar ID de orden → Seleccionar estado → "Actualizar Estado"
+src/cs/server/  ServerMain, ServerSwing, ClientHandler, Protocol
+src/cs/client/  ClienteSwing
+src/cs/dao/     OrdenDao, (ProductoDao)
+src/cs/util/    DB
+lib/            sqlite-jdbc-\<versión>.jar
 
-## Productos Disponibles
+NOTAS
 
-- **ID 1**: Hamburguesa ($5.50)
-- **ID 2**: Papas Fritas ($2.50)  
-- **ID 3**: Refresco ($1.50)
-
-## Protocolo de Comunicación
-
-- `LIST_PRODUCTS` - Listar productos disponibles
-- `CREATE_ORDER|1:2,2:1,3:1` - Crear orden (ID:cantidad,ID:cantidad...)
-- `LIST_ORDERS` - Listar todas las órdenes
-- `UPDATE_ORDER_STATUS|1|EN_PREPARACION` - Actualizar estado de orden
-
-## Estados de Órdenes
-
-- **PENDIENTE** - Orden recién creada
-- **EN_PREPARACION** - En cocina
-- **LISTO** - Lista para entregar
-- **ENTREGADO** - Entregada al cliente
-
-## Funcionalidades
-
-### Cliente
-- ✅ Conexión al servidor
-- ✅ Visualización de productos
-- ✅ Creación de órdenes
-- ✅ Visualización de órdenes
-- ✅ Actualización de estados
-- ✅ Mensajes de confirmación/error
-
-### Servidor
-- ✅ Manejo concurrente de clientes
-- ✅ Persistencia en MySQL
-- ✅ Validación de datos
-- ✅ Manejo de errores
-
-## Solución de Problemas
-
-### Error de Conexión
-- Verifica que MySQL esté corriendo
-- Revisa credenciales en `DB.java`
-- Asegúrate de que el puerto 5050 esté libre
-- Si el puerto está ocupado, ejecuta: `lsof -ti :5050 | xargs kill -9`
-
-### Error de Compilación
-- Asegúrate de tener MySQL Connector en el classpath
-- Compila todos los archivos juntos
-- Usa: `./compile.sh` para compilar fácilmente
-
-### Cliente no Responde
-- Verifica que el servidor esté corriendo
-- Revisa el log en la parte inferior del cliente
-
-## Tecnologías Utilizadas
-
-- **Java** - Lenguaje principal
-- **Swing** - Interfaz gráfica
-- **Sockets** - Comunicación cliente/servidor
-- **Threads** - Concurrencia
-- **MySQL** - Base de datos
-- **JDBC** - Acceso a datos
-
-## Autores
-
-- [Tu Nombre]
-
-## Versión
-
-1.0 - Sistema completo funcional 
+• El archivo de base de datos fideburguesas.db se crea automáticamente.
+• Si la tabla orden incluye la columna notas, las observaciones del cliente se guardan allí.
+• El puerto por defecto es 5050 y puede cambiarse desde la ventana del servidor.
